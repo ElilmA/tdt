@@ -188,7 +188,7 @@ MIT License
 
 ## 作者
 
-项目开发者
+geiwoaichide
 
 ## 更新日志
 
