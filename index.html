@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>天地图 H5 半屏地图示例</title>
+  <!-- TODO: 将下面的 YOUR_TDT_KEY 替换为你在天地图申请的密钥 -->
+  <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=1c62e5747287cbdce9c22774c65f6f3e"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Noto Sans", "PingFang SC", "Microsoft Yahei",
+        sans-serif;
+    }
+
+    body {
+      background: #f5f5f7;
+      color: #333;
+    }
+
+    .page {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #map {
+      width: 100%;
+      height: 50vh; /* 半屏地图 */
+    }
+
+    .panel {
+      flex: 1;
+      padding: 12px 14px 18px;
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .panel-section {
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .panel-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-title span.tag {
+      font-size: 11px;
+      background: #eef3ff;
+      color: #2952ff;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .form-row label {
+      width: 64px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="number"] {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-row input:focus {
+      border-color: #2952ff;
+      box-shadow: 0 0 0 1px rgba(41, 82, 255, 0.2);
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2952ff, #547bff);
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(41, 82, 255, 0.35);
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: #2952ff;
+      border: 1px solid rgba(41, 82, 255, 0.2);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .small-note {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .coords-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 8px;
+    }
+
+    .coords-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .coords-item label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .coords-item input {
+      padding: 5px 6px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      outline: none;
+    }
+
+    .coords-item input:focus {
+      border-color: #2952ff;
+      box-shadow: 0 0 0 1px rgba(41, 82, 255, 0.12);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .toggle-row label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .log {
+      font-size: 11px;
+      color: #666;
+      max-height: 60px;
+      overflow-y: auto;
+      margin-top: 4px;
+      padding-right: 2px;
+    }
+
+    .log-line {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .suggest-list {
+      margin-top: 4px;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      max-height: 140px;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .suggest-item {
+      padding: 6px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .suggest-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggest-item:hover {
+      background: #f5f7ff;
+    }
+
+    .suggest-item-name {
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .suggest-item-addr {
+      color: #6b7280;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="map"></div>
+    <div class="panel">
+      <!-- 地点检索 -->
+      <div class="panel-section">
+        <div class="section-title">
+          地点检索
+          <span class="tag">城市 / 区县 + 关键字</span>
+        </div>
+
+        <!-- 行政区划选择 -->
+        <div class="form-row">
+          <label>行政区划</label>
+          <select id="adminSelect" style="flex: 1; padding: 6px 8px; border-radius: 8px; border: 1px solid #ddd; font-size: 12px;">
+            <option value="">请选择行政区（必选）</option>
+          </select>
+        </div>
+
+        <!-- 关键字检索 -->
+        <div class="form-row">
+          <label for="searchInput">关键字</label>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="可直接输入地点，如：天安门"
+          />
+          <button id="btnSearch" class="btn btn-primary">检索</button>
+        </div>
+        <div class="small-note">
+          说明：需先选择行政区（国标码）再输入关键字。接口一次返回前 10 条候选，可实时筛选。
+        </div>
+        <!-- 实时候选列表 -->
+        <div id="suggestList" class="suggest-list"></div>
+        <div class="badge" id="searchResultAddr">尚无检索结果</div>
+      </div>
+
+      <!-- 路线规划 -->
+      <div class="panel-section">
+        <div class="section-title">
+          路线规划（用户A / 用户B）
+          <span class="tag">驾车 + 直线</span>
+        </div>
+        <div class="coords-grid">
+          <div class="coords-item">
+            <label>用户A 起点经度</label>
+            <input id="aStartLng" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户A 起点纬度</label>
+            <input id="aStartLat" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户A 终点经度</label>
+            <input id="aEndLng" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户A 终点纬度</label>
+            <input id="aEndLat" type="number" step="0.000001" />
+          </div>
+
+          <div class="coords-item">
+            <label>用户B 起点经度</label>
+            <input id="bStartLng" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户B 起点纬度</label>
+            <input id="bStartLat" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户B 终点经度</label>
+            <input id="bEndLng" type="number" step="0.000001" />
+          </div>
+          <div class="coords-item">
+            <label>用户B 终点纬度</label>
+            <input id="bEndLat" type="number" step="0.000001" />
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <label>
+            <input type="checkbox" id="chkShowRoad" checked />
+            显示公路路线（驾车）
+          </label>
+          <label>
+            <input type="checkbox" id="chkShowAir" checked />
+            显示空运路线（直线）
+          </label>
+        </div>
+
+        <div class="btn-group">
+          <button id="btnPlanRoute" class="btn btn-primary">
+            规划路线
+          </button>
+          <button id="btnClearRoute" class="btn btn-outline">
+            清除路线与图标
+          </button>
+          <button id="btnFillDemo" class="btn btn-outline">
+            填充北京示例坐标
+          </button>
+        </div>
+        <div class="small-note">
+          说明：公路路线通过天地图驾车服务规划；空运路线为起点到终点的直线段。
+        </div>
+      </div>
+
+      <!-- 用户当前位置 -->
+      <div class="panel-section">
+        <div class="section-title">
+          用户当前位置
+          <span class="tag">HTML5 Geolocation</span>
+        </div>
+        <div class="btn-group">
+          <button id="btnLocateOnce" class="btn btn-outline">
+            获取一次定位
+          </button>
+          <button id="btnToggleWatch" class="btn btn-outline">
+            开启连续定位
+          </button>
+        </div>
+        <div class="badge" id="currentPosText">尚未获取位置</div>
+        <div class="small-note">
+          注意：需要在 HTTPS 或本地（localhost）环境下，浏览器授权后才可获取真实位置。
+        </div>
+      </div>
+
+      <!-- 简单日志 -->
+      <div class="panel-section">
+        <div class="section-title">
+          日志信息
+        </div>
+        <div id="log" class="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 全局变量与配置
+    // =========================
+    
+    /** @type {T.Map} 天地图地图实例 */
+    var map;
+    
+    /** @type {T.DrivingRoute} 天地图驾车路线服务实例 */
+    var drivingRouteService;
+    
+    /**
+     * 从页面script标签中自动提取天地图API密钥（tk参数）
+     * @type {string}
+     */
+    var TDT_KEY = (function () {
+      var scripts = document.getElementsByTagName("script");
+      for (var i = 0; i < scripts.length; i++) {
+        var src = scripts[i].src || "";
+        var m = src.match(/[?&]tk=([^&]+)/);
+        if (m) return m[1];
+      }
+      return "";
+    })();
+
+    /** @type {Array<T.Marker>} 存储检索结果标记数组（可能有多个） */
+    var searchMarkers = [];
+    
+    /** @type {T.Marker|null} 用户当前位置标记 */
+    var currentMarker = null;
+    
+    /** @type {number|null} HTML5 Geolocation watchPosition的监听ID */
+    var currentWatchId = null;
+
+    /** @type {Array<T.Marker>} 存储用户A/B的起终点标记 */
+    var routeMarkers = [];
+    
+    /** @type {Array<T.Polyline>} 存储公路路线折线覆盖物 */
+    var roadRouteOverlays = [];
+    
+    /** @type {Array<T.Polyline>} 存储空运直线折线覆盖物 */
+    var airRouteOverlays = [];
+    
+    /** @type {number} 实时候选搜索的请求令牌，用于防止过期请求覆盖新结果 */
+    var latestSuggestToken = 0;
+    
+    /** @type {number} 正式搜索的请求令牌，用于防止过期请求覆盖新结果 */
+    var latestSearchToken = 0;
+    
+    /** 
+     * 天地图v2/search搜索接口地址
+     * @type {string}
+     * @description 如果直接请求返回403，请使用服务端代理。将地址改为你的代理服务器地址，例如："/api/tdt-search" 或 "http://localhost:3000/api/tdt-search"
+     */
+    var TDT_SEARCH_API = "http://localhost:3000/api/tdt-search"; // 使用服务端代理，避免CORS和403问题
+
+    /**
+     * 行政区划配置数据（名称 + 国标码 + 中心点坐标）
+     * @type {Array<{name: string, code: string, center: {lng: number, lat: number, zoom: number}}>}
+     * @description 可按需扩展更多城市，每个城市包含名称、9位国标码和地图中心点坐标及缩放级别
+     */
+    var ADMIN_REGIONS = [
+      { name: "北京市", code: "156110000", center: { lng: 116.407395, lat: 39.904211, zoom: 11 } },
+      { name: "上海市", code: "156310000", center: { lng: 121.473701, lat: 31.230416, zoom: 11 } },
+      { name: "天津市", code: "156120000", center: { lng: 117.200983, lat: 39.084158, zoom: 11 } },
+      { name: "重庆市", code: "156500000", center: { lng: 106.551643, lat: 29.562849, zoom: 10 } },
+      { name: "广州市", code: "156440100", center: { lng: 113.264385, lat: 23.129112, zoom: 11 } },
+      { name: "深圳市", code: "156440300", center: { lng: 114.057868, lat: 22.543099, zoom: 11 } },
+      { name: "杭州市", code: "156330100", center: { lng: 120.15507, lat: 30.274084, zoom: 11 } },
+      { name: "成都市", code: "156510100", center: { lng: 104.066541, lat: 30.572269, zoom: 11 } },
+      { name: "武汉市", code: "156420100", center: { lng: 114.305393, lat: 30.593099, zoom: 11 } },
+      { name: "西安市", code: "156610100", center: { lng: 108.93977, lat: 34.341574, zoom: 11 } }
+    ];
+    
+    /**
+     * 行政区划快速查找映射表（通过国标码或名称快速查找）
+     * @type {Object<string, Object>}
+     * @description 将ADMIN_REGIONS数组转换为对象，支持通过code或name快速查找
+     */
+    var ADMIN_REGION_MAP = {};
+    ADMIN_REGIONS.forEach(function (item) {
+      ADMIN_REGION_MAP[item.code] = item;
+      ADMIN_REGION_MAP[item.name] = item;
+    });
+
+    /**
+     * 日志记录函数
+     * @param {string} msg - 要记录的日志消息
+     * @description 在页面日志区域显示带时间戳的日志信息，新日志会插入到顶部
+     */
+    function log(msg) {
+      var logEl = document.getElementById("log");
+      var line = document.createElement("div");
+      line.className = "log-line";
+      var time = new Date().toLocaleTimeString();
+      line.textContent = "[" + time + "] " + msg;
+      logEl.prepend(line);
+    }
+
+    /**
+     * 解析输入框中的经纬度坐标
+     * @param {string} lngInputId - 经度输入框的ID
+     * @param {string} latInputId - 纬度输入框的ID
+     * @param {string} name - 坐标名称（用于错误提示）
+     * @returns {T.LngLat} 天地图经纬度对象
+     * @throws {Error} 当坐标值不合法时抛出错误
+     * @description 从指定的输入框中读取经纬度值，验证后转换为天地图LngLat对象
+     */
+    function parseCoord(lngInputId, latInputId, name) {
+      var lng = parseFloat(document.getElementById(lngInputId).value);
+      var lat = parseFloat(document.getElementById(latInputId).value);
+      if (isNaN(lng) || isNaN(lat)) {
+        throw new Error(name + " 坐标不合法");
+      }
+      return new T.LngLat(lng, lat);
+    }
+
+    /**
+     * 清除地图上所有检索结果标记
+     * @description 移除地图上所有通过地点检索添加的标记点，并清空标记数组
+     */
+    function clearSearchMarker() {
+      searchMarkers.forEach(function (m) {
+        map.removeOverLay(m);
+      });
+      searchMarkers = [];
+    }
+
+    /**
+     * 清除地图上所有路线规划相关的覆盖物
+     * @description 移除用户A/B的起终点标记、公路路线折线和空运直线，并清空相关数组
+     */
+    function clearRoute() {
+      routeMarkers.forEach(function (m) {
+        map.removeOverLay(m);
+      });
+      routeMarkers = [];
+
+      roadRouteOverlays.forEach(function (o) {
+        map.removeOverLay(o);
+      });
+      roadRouteOverlays = [];
+
+      airRouteOverlays.forEach(function (o) {
+        map.removeOverLay(o);
+      });
+      airRouteOverlays = [];
+
+      log("已清除所有路线与起终点图标");
+    }
+
+    /**
+     * 更新用户当前位置显示文本
+     * @param {string} text - 要显示的文本内容
+     * @description 在控制面板中更新当前用户位置的经纬度信息显示
+     */
+    function setCurrentPositionText(text) {
+      document.getElementById("currentPosText").textContent = text;
+    }
+
+    // =========================
+    // 地图初始化
+    // =========================
+    /**
+     * 初始化天地图地图实例和相关服务
+     * @description 创建地图对象，设置默认中心点和缩放级别，初始化驾车路线服务，绑定UI事件，初始化行政区划下拉框
+     */
+    function initMap() {
+      if (!window.T || !T.Map) {
+        alert("天地图 JS API 加载失败，请检查网络或密钥是否正确。");
+        return;
+      }
+
+      map = new T.Map("map");
+      // 默认中心：北京天安门
+      map.centerAndZoom(new T.LngLat(116.397451, 39.909187), 12);
+      map.enableScrollWheelZoom();
+
+      // 驾车路线服务（如果该类存在）
+      if (T.DrivingRoute) {
+        drivingRouteService = new T.DrivingRoute(map, {
+          policy: 0, // 默认策略
+          onSearchComplete: function (result) {
+            // 将驾车结果中所有路段的路径点拼接成一条完整折线，避免只显示一小段
+            try {
+              var allPoints = [];
+
+              // 优先尝试按 plan / route 结构解析
+              if (typeof result.getNumPlans === "function") {
+                var planCount = result.getNumPlans();
+                for (var i = 0; i < planCount; i++) {
+                  var plan = result.getPlan(i);
+                  if (!plan) continue;
+
+                  if (typeof plan.getNumRoutes === "function") {
+                    var routeCount = plan.getNumRoutes();
+                    for (var j = 0; j < routeCount; j++) {
+                      var route = plan.getRoute(j);
+                      if (route && typeof route.getPath === "function") {
+                        var segPath = route.getPath();
+                        if (segPath && segPath.length) {
+                          allPoints = allPoints.concat(segPath);
+                        }
+                      }
+                    }
+                  } else if (typeof plan.getRoute === "function") {
+                    var route0 = plan.getRoute(0);
+                    if (route0 && typeof route0.getPath === "function") {
+                      var p0 = route0.getPath();
+                      if (p0 && p0.length) {
+                        allPoints = allPoints.concat(p0);
+                      }
+                    }
+                  }
+                }
+              }
+
+              // 兜底：某些版本可能直接有 getRoute / getPath
+              if (!allPoints.length && typeof result.getRoute === "function") {
+                var r = result.getRoute(0);
+                if (r && typeof r.getPath === "function") {
+                  var p = r.getPath();
+                  if (p && p.length) allPoints = allPoints.concat(p);
+                }
+              }
+
+              if (allPoints.length) {
+                var polyline = new T.Polyline(allPoints, {
+                  color: "#ff6600",
+                  weight: 4,
+                  opacity: 0.85,
+                });
+                map.addOverLay(polyline);
+                roadRouteOverlays.push(polyline);
+                log("驾车路线绘制完成，路径点数量：" + allPoints.length);
+              } else {
+                log("驾车结果返回成功，但未能解析到路径点，请检查 result 结构。");
+                console && console.log && console.log("DrivingRoute result:", result);
+              }
+            } catch (e) {
+              log("驾车结果解析异常：" + e.message);
+              console && console.error && console.error("DrivingRoute parse error:", e, result);
+            }
+          },
+        });
+      } else {
+        log("未找到 T.DrivingRoute 类，可能当前密钥不支持驾车服务或 API 版本不同。");
+      }
+
+      bindUIEvents();
+      initAdminSelect();
+      log("地图初始化完成");
+    }
+
+    // =========================
+    // UI 事件绑定
+    // =========================
+    /**
+     * 绑定所有UI控件的事件监听器
+     * @description 为检索按钮、搜索框输入、路线规划按钮、定位按钮等控件绑定点击和输入事件
+     */
+    function bindUIEvents() {
+      document
+        .getElementById("btnSearch")
+        .addEventListener("click", handleSearch);
+
+      // 搜索框实时监听，做候选列表
+      var searchInput = document.getElementById("searchInput");
+      if (searchInput) {
+        var debounceTimer = null;
+        searchInput.addEventListener("input", function () {
+          var val = searchInput.value.trim();
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(function () {
+            handleSuggestSearch(val);
+          }, 300);
+        });
+      }
+
+      document
+        .getElementById("btnPlanRoute")
+        .addEventListener("click", handlePlanRoute);
+
+      document
+        .getElementById("btnClearRoute")
+        .addEventListener("click", clearRoute);
+
+      document
+        .getElementById("btnFillDemo")
+        .addEventListener("click", fillDemoCoords);
+
+      document
+        .getElementById("btnLocateOnce")
+        .addEventListener("click", locateOnce);
+
+      document
+        .getElementById("btnToggleWatch")
+        .addEventListener("click", toggleWatch);
+    }
+
+    // =========================
+    // 行政区划下拉初始化
+    // =========================
+    /**
+     * 初始化行政区划下拉选择框
+     * @description 填充行政区划选项（名称+国标码），绑定change事件实现选择后自动定位到该行政区中心点，默认选中第一个行政区
+     */
+    function initAdminSelect() {
+      var adminSelect = document.getElementById("adminSelect");
+      if (!adminSelect) return;
+
+      ADMIN_REGIONS.forEach(function (item) {
+        var opt = document.createElement("option");
+        opt.value = item.code;
+        opt.textContent = item.name + "（" + item.code + "）";
+        adminSelect.appendChild(opt);
+      });
+
+      adminSelect.addEventListener("change", function () {
+        var code = adminSelect.value;
+        if (!code) return;
+        var region = ADMIN_REGION_MAP[code];
+        if (region && region.center) {
+          var lnglat = new T.LngLat(region.center.lng, region.center.lat);
+          map.centerAndZoom(lnglat, region.center.zoom || 11);
+          log("已根据行政区划定位到中心点：" + region.name + " (" + code + ")");
+        }
+      });
+
+      // 默认选中第一个行政区
+      if (ADMIN_REGIONS.length > 0) {
+        adminSelect.value = ADMIN_REGIONS[0].code;
+        adminSelect.dispatchEvent(new Event("change"));
+      }
+    }
+
+    // =========================
+    // 1. 地点检索（使用 v2/search 接口）
+    // =========================
+    /**
+     * 执行地点检索（正式搜索）
+     * @description 根据选中的行政区划和输入的关键字，调用天地图v2/search接口检索POI数据，在地图上显示结果标记，并更新地址显示
+     */
+    function handleSearch() {
+      var keyword = document.getElementById("searchInput").value.trim();
+      var adminSelect = document.getElementById("adminSelect");
+      var specify = adminSelect ? adminSelect.value : "";
+
+      if (!specify) {
+        alert("请先选择行政区（国标码）");
+        return;
+      }
+      if (!keyword) {
+        alert("请输入检索关键字");
+        return;
+      }
+
+      var addrEl = document.getElementById("searchResultAddr");
+      if (addrEl) addrEl.textContent = "检索中...";
+
+      latestSearchToken += 1;
+      var token = latestSearchToken;
+
+      clearSearchMarker();
+      requestPoiData(keyword, specify, { start: 0, count: 10 })
+        .then(function (resp) {
+          if (token !== latestSearchToken) return;
+          renderPoiResults(resp, keyword, specify);
+        })
+        .catch(function (err) {
+          if (addrEl) addrEl.textContent = "检索失败：" + err.message;
+          log("检索失败：" + err.message);
+        });
+    }
+
+    /**
+     * 实时候选搜索（输入框输入时触发）
+     * @param {string} rawKeyword - 用户输入的关键字
+     * @description 在用户输入关键字时，实时调用搜索接口获取候选列表（最多10条），显示在搜索框下方的候选列表中，支持点击候选项快速选择
+     */
+    function handleSuggestSearch(rawKeyword) {
+      var suggestListEl = document.getElementById("suggestList");
+      var adminSelect = document.getElementById("adminSelect");
+      if (!suggestListEl || !adminSelect) return;
+
+      var specify = adminSelect.value;
+      if (!rawKeyword || !specify) {
+        suggestListEl.innerHTML = "";
+        return;
+      }
+
+      latestSuggestToken += 1;
+      var token = latestSuggestToken;
+
+      requestPoiData(rawKeyword, specify, { start: 0, count: 10 })
+        .then(function (resp) {
+          if (token !== latestSuggestToken) return;
+          renderSuggestList(resp && resp.pois ? resp.pois : []);
+        })
+        .catch(function () {
+          suggestListEl.innerHTML = "";
+        });
+    }
+
+    /*
+    // LocalSearch 结果回调函数
+    // 保留函数占位（已由 v2/search 接口替换）
+
+    // 实时候选结果回调
+    // 保留函数占位
+
+    // 解析点数据结果
+    function pois(obj) {
+      if (!obj || obj.length === 0) {
+        alert("未找到相关地点");
+        document.getElementById("searchResultAddr").textContent = "未找到结果";
+        log("LocalSearch 点数据为空");
+        return;
+      }
+
+      // 坐标数组，设置最佳比例尺时会用到
+      var zoomArr = [];
+      var firstPoi = null;
+
+      for (var i = 0; i < obj.length; i++) {
+        // 名称
+        var name = obj[i].name;
+        // 地址
+        var address = obj[i].address;
+        // 坐标（示例中是字符串格式 "lng,lat"）
+        var lonlatStr = obj[i].lonlat;
+        if (!lonlatStr) continue;
+
+        var lnglatArr = lonlatStr.split(",");
+        if (lnglatArr.length < 2) continue;
+
+        var lnglat = new T.LngLat(parseFloat(lnglatArr[0]), parseFloat(lnglatArr[1]));
+        if (isNaN(lnglat.getLng()) || isNaN(lnglat.getLat())) continue;
+
+        zoomArr.push(lnglat);
+
+        // 保存第一个结果用于显示
+        if (i === 0) {
+          firstPoi = {
+            name: name,
+            address: address,
+            lnglat: lnglat
+          };
+        }
+
+        // 创建标注对象
+        var marker = new T.Marker(lnglat);
+        // 地图上添加标注点
+        map.addOverLay(marker);
+        // 保存到数组中用于清除
+        searchMarkers.push(marker);
+
+        // 注册标注点的点击事件
+        var winHtml = "名称:" + name + "<br/>地址:" + (address || "");
+        var markerInfoWin = new T.InfoWindow(winHtml, {autoPan: true});
+        marker.addEventListener("click", function() {
+          marker.openInfoWindow(markerInfoWin);
+        });
+      }
+
+      // 显示地图的最佳级别
+      if (zoomArr.length > 0) {
+        map.setViewport(zoomArr);
+      }
+
+      // 显示第一个结果的地址信息
+      if (firstPoi) {
+        var fullAddr = (firstPoi.address || "") + (firstPoi.name ? ("（" + firstPoi.name + "）") : "");
+        document.getElementById("searchResultAddr").textContent = fullAddr || "无详细地址字段";
+
+        log("LocalSearch 检索成功，找到 " + obj.length + " 个结果，经纬度：" + 
+            firstPoi.lnglat.getLng().toFixed(6) + ", " + firstPoi.lnglat.getLat().toFixed(6));
+      }
+    }
+
+    // 解析推荐城市
+    function statistics(obj) {
+      if (obj) {
+        var msg = "推荐城市：";
+        console.log(obj);
+        if (obj.priorityCitys && obj.priorityCitys.length > 0) {
+          msg += obj.priorityCitys.map(function(c) { return c.name + "(" + c.count + ")"; }).join(", ");
+        }
+        log(msg);
+        document.getElementById("searchResultAddr").textContent = msg;
+      }
+    }
+
+    // 解析行政区划边界
+    function area(obj) {
+      if (obj) {
+        if (obj.points) {
+          var pointsArr = [];
+          var points = obj.points;
+          for (var i = 0; i < points.length; i++) {
+            var regionLngLats = [];
+            var regionArr = points[i].region.split(",");
+            for (var m = 0; m < regionArr.length; m++) {
+              var lnglatArr = regionArr[m].split(" ");
+              var lnglat = new T.LngLat(parseFloat(lnglatArr[0]), parseFloat(lnglatArr[1]));
+              regionLngLats.push(lnglat);
+              pointsArr.push(lnglat);
+            }
+            // 创建线对象
+            var line = new T.Polyline(regionLngLats, {
+              color: "blue",
+              weight: 3,
+              opacity: 1,
+              lineStyle: "dashed"
+            });
+            // 向地图上添加线
+            map.addOverLay(line);
+          }
+          // 显示最佳比例尺
+          if (pointsArr.length > 0) {
+            map.setViewport(pointsArr);
+          }
+        }
+        if (obj.lonlat) {
+          var regionArr = obj.lonlat.split(",");
+          map.panTo(new T.LngLat(parseFloat(regionArr[0]), parseFloat(regionArr[1])));
+        }
+        log("显示行政区划边界");
+      }
+    }
+
+    // 解析建议词信息
+    function suggests(obj) {
+      if (obj && obj.length > 0) {
+        var msg = "建议词：" + obj.map(function(s) { return s.name; }).join(", ");
+        log(msg);
+        document.getElementById("searchResultAddr").textContent = msg;
+      }
+    }
+
+    // 解析公交信息
+    function lineData(obj) {
+      if (obj && obj.length > 0) {
+        var msg = "公交线路：" + obj.map(function(l) { return l.name + "(" + l.stationNum + "站)"; }).join(", ");
+        log(msg);
+        document.getElementById("searchResultAddr").textContent = msg;
+      }
+    }
+    */
+
+    // =========================
+    // v2/search 接口工具方法
+    // =========================
+    /**
+     * 请求天地图v2/search接口获取POI数据
+     * @param {string} keyword - 搜索关键字
+     * @param {string} specify - 行政区划国标码（9位，如"156110000"表示北京）
+     * @param {Object} options - 可选参数对象
+     * @param {number} [options.start=0] - 返回结果起始位置（0-300）
+     * @param {number} [options.count=10] - 返回结果数量（1-300）
+     * @param {string} [options.dataTypes] - 数据分类编码（可选）
+     * @param {string} [options.show] - 返回信息类别：1-基本信息，2-详细信息（可选）
+     * @returns {Promise<Object>} 返回Promise，resolve时包含接口返回的JSON数据
+     * @description 使用JSONP方式调用天地图搜索接口，避免CORS跨域问题。自动从页面script标签中提取tk密钥
+     */
+    function requestPoiData(keyword, specify, options) {
+      var tk = TDT_KEY;
+      if (!tk) {
+        return Promise.reject(
+          new Error("未能解析到 tk，请确认天地图脚本 URL 已包含 tk 参数")
+        );
+      }
+      var payload = {
+        keyWord: keyword,
+        specify: specify,
+        queryType: "12",
+        start: String(
+          options && options.start !== undefined ? options.start : 0
+        ),
+        count: String(
+          options && options.count !== undefined ? options.count : 10
+        ),
+      };
+      if (options && options.dataTypes) payload.dataTypes = options.dataTypes;
+      if (options && options.show) payload.show = options.show;
+
+      // 使用服务端代理请求，避免CORS和403问题
+      // 构建请求URL（将参数传递给服务端代理）
+      var url = TDT_SEARCH_API + 
+        "?postStr=" + encodeURIComponent(JSON.stringify(payload)) +
+        "&type=query&tk=" + encodeURIComponent(tk);
+      
+      // 使用 fetch 请求服务端代理
+      return fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        }
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status + " " + res.statusText);
+        }
+        return res.json();
+      })
+      .then(function (json) {
+        // 检查接口返回的状态码
+        if (json && json.status && json.status.length) {
+          var statusInfo = json.status[0];
+          if (
+            statusInfo &&
+            statusInfo.infocode &&
+            statusInfo.infocode !== 1000
+          ) {
+            throw new Error(
+              statusInfo.cndesc || "接口状态码：" + statusInfo.infocode
+            );
+          }
+        }
+        return json;
+      });
+    }
+
+    /**
+     * 构建完整地址信息（省市区+详细地址）
+     * @param {Object} poiData - POI数据对象
+     * @returns {string} 完整地址字符串
+     * @description 从POI数据中提取省、市、区、详细地址，拼接成完整地址
+     */
+    function buildFullAddress(poiData) {
+      if (!poiData) return "";
+      
+      var parts = [];
+      // 尝试多种可能的字段名（根据天地图API文档）
+      var province = poiData.province || poiData.provinceName || "";
+      var city = poiData.city || poiData.cityName || "";
+      var county = poiData.county || poiData.countyName || "";
+      var address = poiData.address || "";
+      
+      if (province) parts.push(province);
+      if (city) parts.push(city);
+      if (county) parts.push(county);
+      if (address) parts.push(address);
+      
+      return parts.join("");
+    }
+
+    /**
+     * 渲染POI检索结果到地图上
+     * @param {Object} resp - 接口返回的响应数据
+     * @param {string} keyword - 搜索关键字
+     * @param {string} specify - 行政区划国标码
+     * @description 解析接口返回的POI数据，在地图上添加标记点（最多10个），为每个标记添加点击事件显示信息窗口，自动调整地图视野以显示所有结果，更新地址显示区域
+     */
+    function renderPoiResults(resp, keyword, specify) {
+      var addrEl = document.getElementById("searchResultAddr");
+      var suggestListEl = document.getElementById("suggestList");
+      if (suggestListEl) suggestListEl.innerHTML = "";
+
+      if (!resp) {
+        if (addrEl) addrEl.textContent = "未获取到接口响应";
+        log("检索无响应");
+        return;
+      }
+
+      var resultType = parseInt(resp.resultType, 10);
+      var pois = resp.pois || [];
+
+      if (resultType !== 1 || !pois.length) {
+        if (addrEl) addrEl.textContent = "未找到相关地点，关键字：" + keyword;
+        log("结果类型：" + resultType + "，无可用 POI。");
+        return;
+      }
+
+      var points = [];
+      clearSearchMarker();
+
+      pois.slice(0, 10).forEach(function (poi, index) {
+        var lnglat = parsePoiLngLat(poi.lonlat);
+        if (!lnglat) return;
+        points.push(lnglat);
+
+        var marker = new T.Marker(lnglat);
+        map.addOverLay(marker);
+        searchMarkers.push(marker);
+
+        // 构建完整地址
+        var fullAddress = buildFullAddress(poi);
+        
+        // 调试：输出第一个POI的数据结构（仅第一个）
+        if (index === 0) {
+          console.log("POI数据结构:", poi);
+          console.log("构建的完整地址:", fullAddress);
+          console.log("省:", poi.province || poi.provinceName, "市:", poi.city || poi.cityName, "区:", poi.county || poi.countyName);
+        }
+
+        // 信息窗口内容
+        var html =
+          "<strong>" +
+          (poi.name || "未命名地点") +
+          "</strong><br/>地址：" +
+          (poi.address || "—") +
+          "<br/>所属：" +
+          (poi.city || "") +
+          (poi.county ? " · " + poi.county : "");
+        var info = new T.InfoWindow(html, { autoPan: true });
+        
+        // 标记点击事件：显示信息窗口并更新地址显示
+        // 使用闭包保存当前POI数据、行政区信息和坐标
+        (function(currentPoi, currentSpecify, currentLnglat) {
+          console.log("currentPoi", currentPoi);
+          marker.addEventListener("click", function () {
+            marker.openInfoWindow(info);
+            
+            // 重新构建完整地址（确保使用最新的POI数据）
+            var clickedFullAddress = buildFullAddress(currentPoi);
+            
+            // 获取当前行政区名称
+            var regionName = "";
+            if (currentSpecify && ADMIN_REGION_MAP[currentSpecify]) {
+              regionName = ADMIN_REGION_MAP[currentSpecify].name;
+            }
+            
+            // 在地址前面加上行政区名称
+            var finalAddress = "";
+            if (regionName) {
+              finalAddress = regionName + clickedFullAddress;
+            } else {
+              finalAddress = clickedFullAddress;
+            }
+            
+            // 获取坐标信息
+            var coordText = "";
+            if (currentPoi.lonlat) {
+              // lonlat 格式为 "经度,纬度"
+              coordText = " | 坐标：" + currentPoi.lonlat;
+            } else if (currentLnglat) {
+              // 如果有 lnglat 对象，格式化为字符串
+              coordText = " | 坐标：" + currentLnglat.getLng().toFixed(6) + "," + currentLnglat.getLat().toFixed(6);
+            }
+            
+            // 更新地址显示区域
+            var addrEl = document.getElementById("searchResultAddr");
+            if (addrEl) {
+              var displayText = finalAddress || (currentPoi.address || "");
+              if (currentPoi.name) {
+                displayText += "（" + currentPoi.name + "）";
+              }
+              // 在同一行添加坐标信息
+              displayText += currentPoi.lonlat || coordText;
+              addrEl.textContent = displayText;
+              console.log("点击标记 - POI数据:", currentPoi);
+              console.log("点击标记 - 行政区名称:", regionName);
+              console.log("点击标记 - 构建的完整地址:", clickedFullAddress);
+              console.log("点击标记 - 坐标:", coordText);
+              console.log("点击标记 - 最终显示:", displayText);
+            } else {
+              console.error("未找到 searchResultAddr 元素");
+            }
+            log("已选择地点：" + (currentPoi.name || "未命名") + "，完整地址：" + finalAddress + currentPoi.lonlat);
+          });
+        })(poi, specify, lnglat);
+
+        if (index === 0) {
+          map.panTo(lnglat);
+          map.setZoom(13);
+          // 第一个结果默认显示完整地址（包含行政区名称）
+          if (addrEl) {
+            // 获取当前行政区名称
+            var regionName = "";
+            if (specify && ADMIN_REGION_MAP[specify]) {
+              regionName = ADMIN_REGION_MAP[specify].name;
+            }
+            
+            // 在地址前面加上行政区名称
+            var defaultAddress = "";
+            if (regionName) {
+              defaultAddress = regionName + fullAddress;
+            } else {
+              defaultAddress = fullAddress;
+            }
+            
+            var defaultText = defaultAddress || (poi.address || "");
+            if (poi.name) {
+              defaultText += "（" + poi.name + "）";
+            }
+            addrEl.textContent = defaultText;
+            console.log("默认显示地址:", defaultText, "POI数据:", poi);
+          }
+        }
+      });
+
+      if (points.length > 1) {
+        map.setViewport(points);
+      }
+
+      log(
+        "接口检索成功，行政区：" +
+          specify +
+          "，关键字：" +
+          keyword +
+          "，返回 " +
+          pois.length +
+          " 条"
+      );
+    }
+
+    /**
+     * 渲染实时候选列表
+     * @param {Array} pois - POI数据数组
+     * @description 将POI数据渲染为候选列表项（最多10条），每个候选项显示名称和地址，点击候选项会将名称填入搜索框并执行正式搜索
+     */
+    function renderSuggestList(pois) {
+      var suggestListEl = document.getElementById("suggestList");
+      if (!suggestListEl) return;
+      suggestListEl.innerHTML = "";
+
+      if (!pois || !pois.length) return;
+
+      pois.slice(0, 10).forEach(function (poi) {
+        var item = document.createElement("div");
+        item.className = "suggest-item";
+
+        var nameEl = document.createElement("div");
+        nameEl.className = "suggest-item-name";
+        nameEl.textContent = poi.name || "未命名地点";
+
+        var addrEl = document.createElement("div");
+        addrEl.className = "suggest-item-addr";
+        addrEl.textContent = poi.address || "";
+
+        item.appendChild(nameEl);
+        item.appendChild(addrEl);
+
+        item.addEventListener("click", function () {
+          var input = document.getElementById("searchInput");
+          if (input && poi.name) {
+            input.value = poi.name;
+          }
+          suggestListEl.innerHTML = "";
+          handleSearch();
+        });
+
+        suggestListEl.appendChild(item);
+      });
+    }
+
+    /**
+     * 解析POI的经纬度字符串
+     * @param {string} lonlatStr - 经纬度字符串，格式为"经度,纬度"
+     * @returns {T.LngLat|null} 天地图经纬度对象，解析失败返回null
+     * @description 将字符串格式的经纬度（如"116.397451,39.909187"）转换为天地图LngLat对象
+     */
+    function parsePoiLngLat(lonlatStr) {
+      if (!lonlatStr) return null;
+      var arr = lonlatStr.split(",");
+      if (arr.length < 2) return null;
+      var lng = parseFloat(arr[0]);
+      var lat = parseFloat(arr[1]);
+      if (isNaN(lng) || isNaN(lat)) return null;
+      return new T.LngLat(lng, lat);
+    }
+
+    // =========================
+    // 2. 路线规划（公路 + 直线）
+    // =========================
+    /**
+     * 规划并显示用户A和用户B的路线
+     * @description 根据输入的四个坐标点（用户A起点终点、用户B起点终点），在地图上显示起终点标记图标，根据复选框选择绘制公路路线（驾车）和/或空运路线（直线），自动调整地图视野以包含所有点
+     */
+    function handlePlanRoute() {
+      try {
+        var aStart = parseCoord("aStartLng", "aStartLat", "用户A起点");
+        var aEnd = parseCoord("aEndLng", "aEndLat", "用户A终点");
+        var bStart = parseCoord("bStartLng", "bStartLat", "用户B起点");
+        var bEnd = parseCoord("bEndLng", "bEndLat", "用户B终点");
+
+        var showRoad = document.getElementById("chkShowRoad").checked;
+        var showAir = document.getElementById("chkShowAir").checked;
+        if (!showRoad && !showAir) {
+          alert("请至少勾选一种路线类型（公路 / 空运直线）");
+          return;
+        }
+
+        clearRoute();
+
+        /**
+         * 创建自定义图标（内嵌辅助函数）
+         * @param {string} color - 图标颜色（十六进制，如"#22c55e"）
+         * @returns {T.Icon} 天地图图标对象
+         * @description 使用SVG创建简单的圆点图标，避免外部图片依赖
+         */
+        function createIcon(color) {
+          // 使用简单的圆点 SVG 作为图标，避免外部图片依赖
+          var svg =
+            "data:image/svg+xml;charset=UTF-8," +
+            encodeURIComponent(
+              '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">' +
+                '<circle cx="13" cy="13" r="9" fill="' +
+                color +
+                '"/>' +
+                '<circle cx="13" cy="13" r="4" fill="#fff"/>' +
+                "</svg>"
+            );
+          return new T.Icon({
+            iconUrl: svg,
+            iconSize: new T.Point(26, 26),
+          });
+        }
+
+        var iconAStart = createIcon("#22c55e");
+        var iconAEnd = createIcon("#16a34a");
+        var iconBStart = createIcon("#3b82f6");
+        var iconBEnd = createIcon("#2563eb");
+
+        var mAStart = new T.Marker(aStart, { icon: iconAStart });
+        var mAEnd = new T.Marker(aEnd, { icon: iconAEnd });
+        var mBStart = new T.Marker(bStart, { icon: iconBStart });
+        var mBEnd = new T.Marker(bEnd, { icon: iconBEnd });
+
+        map.addOverLay(mAStart);
+        map.addOverLay(mAEnd);
+        map.addOverLay(mBStart);
+        map.addOverLay(mBEnd);
+
+        routeMarkers.push(mAStart, mAEnd, mBStart, mBEnd);
+
+        // 调整视野：以四个点的范围为视野
+        var bounds = new T.LngLatBounds(aStart, aStart);
+        bounds.extend(aEnd);
+        bounds.extend(bStart);
+        bounds.extend(bEnd);
+        map.setViewport(bounds);
+
+        // 公路路线（驾车）
+        if (showRoad && drivingRouteService) {
+          // 用户 A
+          drivingRouteService.search(aStart, aEnd);
+          // 用户 B
+          drivingRouteService.search(bStart, bEnd);
+          log("已请求用户A、B的公路驾车路线");
+        } else if (showRoad && !drivingRouteService) {
+          log("当前环境不支持驾车服务（T.DrivingRoute 不存在）");
+        }
+
+        // 空运路线（直线）
+        if (showAir) {
+          var polyA = new T.Polyline([aStart, aEnd], {
+            color: "#22c55e",
+            weight: 3,
+            opacity: 0.9,
+            lineStyle: "dashed",
+          });
+          var polyB = new T.Polyline([bStart, bEnd], {
+            color: "#3b82f6",
+            weight: 3,
+            opacity: 0.9,
+            lineStyle: "dashed",
+          });
+          map.addOverLay(polyA);
+          map.addOverLay(polyB);
+          airRouteOverlays.push(polyA, polyB);
+
+          log("已绘制用户A / B 的空运直线路线");
+        }
+      } catch (e) {
+        alert(e.message || "坐标解析失败");
+        log("规划路线出错：" + e.message);
+      }
+    }
+
+    /**
+     * 填充示例坐标数据
+     * @description 将预设的北京城区示例坐标填充到路线规划的输入框中，方便快速测试路线规划功能
+     */
+    function fillDemoCoords() {
+      // 示例：北京城区附近两组起终点（你可以替换成自己的业务坐标）
+      document.getElementById("aStartLng").value = 116.397451; // 天安门
+      document.getElementById("aStartLat").value = 39.909187;
+      document.getElementById("aEndLng").value = 116.32125; // 中关村附近
+      document.getElementById("aEndLat").value = 39.982568;
+
+      document.getElementById("bStartLng").value = 116.481499; // 国贸附近
+      document.getElementById("bStartLat").value = 39.914603;
+      document.getElementById("bEndLng").value = 116.407394; // 王府井附近
+      document.getElementById("bEndLat").value = 39.914714;
+
+      log("已填充北京示例坐标，可直接点击“规划路线”查看效果");
+    }
+
+    // =========================
+    // 3. 用户当前位置（一次 + 连续）
+    // =========================
+    /**
+     * 更新或创建用户当前位置标记
+     * @param {number} lng - 经度
+     * @param {number} lat - 纬度
+     * @description 在地图上显示或更新用户当前位置的紫色标记点，如果标记不存在则创建，存在则更新位置，并自动将地图中心移动到该位置，更新位置文本显示
+     */
+    function updateCurrentMarker(lng, lat) {
+      var lnglat = new T.LngLat(lng, lat);
+      if (!currentMarker) {
+        // 使用紫色圆点图标
+        var svg =
+          "data:image/svg+xml;charset=UTF-8," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26">' +
+              '<circle cx="13" cy="13" r="9" fill="#8b5cf6"/>' +
+              '<circle cx="13" cy="13" r="4" fill="#fff"/>' +
+              "</svg>"
+          );
+        var icon = new T.Icon({
+          iconUrl: svg,
+          iconSize: new T.Point(26, 26),
+        });
+        currentMarker = new T.Marker(lnglat, { icon: icon });
+        map.addOverLay(currentMarker);
+      } else {
+        currentMarker.setLngLat(lnglat);
+      }
+      map.panTo(lnglat);
+      setCurrentPositionText(
+        "经度：" + lng.toFixed(6) + "，纬度：" + lat.toFixed(6)
+      );
+    }
+
+    /**
+     * 获取一次用户当前位置
+     * @description 使用HTML5 Geolocation API获取用户当前地理位置一次，成功后在地图上显示位置标记，失败则提示错误信息
+     */
+    function locateOnce() {
+      if (!navigator.geolocation) {
+        alert("当前浏览器不支持 HTML5 Geolocation");
+        return;
+      }
+      log("开始获取一次性定位...");
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          var lng = pos.coords.longitude;
+          var lat = pos.coords.latitude;
+          updateCurrentMarker(lng, lat);
+          log("一次定位成功");
+        },
+        function (err) {
+          log("一次定位失败：" + err.message);
+          alert("定位失败：" + err.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    }
+
+    /**
+     * 切换连续定位功能
+     * @description 开启或关闭用户位置的连续监听，开启后会持续更新用户位置标记，关闭后停止监听。按钮文本会根据状态自动切换
+     */
+    function toggleWatch() {
+      if (!navigator.geolocation) {
+        alert("当前浏览器不支持 HTML5 Geolocation");
+        return;
+      }
+      var btn = document.getElementById("btnToggleWatch");
+
+      if (currentWatchId != null) {
+        navigator.geolocation.clearWatch(currentWatchId);
+        currentWatchId = null;
+        btn.textContent = "开启连续定位";
+        log("已停止连续定位");
+        return;
+      }
+
+      log("开始连续定位...");
+      currentWatchId = navigator.geolocation.watchPosition(
+        function (pos) {
+          var lng = pos.coords.longitude;
+          var lat = pos.coords.latitude;
+          updateCurrentMarker(lng, lat);
+        },
+        function (err) {
+          log("连续定位错误：" + err.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 1000,
+        }
+      );
+      btn.textContent = "关闭连续定位";
+    }
+
+    // 等待页面加载完成后初始化地图
+    window.addEventListener("load", initMap);
+  </script>
+</body>
+</html>
+
+
